@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小六升中學名次查詢系統</title>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #7f8c8d;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .student-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .student-card {
+      background-color: #eef2f5;
+      border: 2px solid #cfd8dc;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+
+    .student-card:hover {
+      background-color: #e3f2fd;
+      border-color: #2196f3;
+      transform: translateY(-2px);
+    }
+
+    .student-card.active {
+      background-color: #e8f5e9;
+      border-color: #4caf50;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .student-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .rank-info {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #bbb;
+      font-size: 14px;
+      color: #2e7d32;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .rank-item {
+      margin: 4px 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>小六升中學名次查詢</h1>
+    <p class="subtitle">請點擊您的名字查看/隱藏班名次及級名次</p>
+    
+    <div class="student-grid" id="studentGrid"></div>
+  </div>
+
+  <script>
+    // 1. 學生資料設定檔（老師可以自行替換真實學生姓名與名次）
+    const studentData = [
+      { name: "陳德和", classRank: 5,  gradeRank: 67 },
+      { name: "陳若心", classRank: 6,  gradeRank: 69 },
+      { name: "張文康", classRank: 8,  gradeRank: 74 },
+      { name: "周澤宇", classRank: 14, gradeRank: 88 },
+      { name: "周柏霖", classRank: 9, gradeRank: 77 },
+      { name: "朱冠宇", classRank: 4, gradeRank: 61 },
+      { name: "鄧子濠", classRank: 16,  gradeRank: 90 },
+      { name: "傅瑋軒", classRank: 11, gradeRank: 81 },
+{ name: "關煒琪", classRank: 17,  gradeRank: 91 },
+      { name: "甘梓澄", classRank: 19,  gradeRank: 95 },
+      { name: "林泳希", classRank: 24,  gradeRank: 101 },
+      { name: "劉浠妤", classRank: 15, gradeRank: 89 },
+      { name: "梁碩熙", classRank: 22, gradeRank: 99 },
+      { name: "李明意", classRank: 23, gradeRank: 100 },
+      { name: "李泳怡", classRank: 12,  gradeRank: 82 },
+      { name: "林梓琪", classRank: 13, gradeRank: 87 },
+      { name: "盧駿傑", classRank: 18,  gradeRank: 93 },
+      { name: "吳卓謙", classRank: 20,  gradeRank: 96 },
+      { name: "譚永豪", classRank: 7, gradeRank: 72 },
+      { name: "黃銦海", classRank: 3, gradeRank: 55 },
+      { name: "蕭天驊", classRank: 21, gradeRank: 98 },
+      { name: "謝志奇", classRank: 2,  gradeRank: 53 },
+      { name: "叶煬", classRank: 1, gradeRank: 48 },
+      { name: "楊善雯", classRank: 10,  gradeRank: 80 },
+      { name: "姚紫盈", classRank: 25, gradeRank: 105 },
+
+    ];
+
+    // 2. 將實際名次轉換為以 5 為單位的 Range 函數（例如 34 -> 30-35）
+    function getRankRange(rank) {
+      if (!rank || rank <= 0) return "資料不足";
+      
+      const lower = Math.floor((rank - 1) / 5) * 5;
+      const upper = lower + 5;
+      
+      // 如果名次在 1~5，顯示 1-5 名
+      if (lower === 0) {
+        return `第 1 - 5 名`;
+      }
+      
+      return `第 ${lower} - ${upper} 名`;
+    }
+
+    // 3. 動態渲染學生卡片
+    const gridContainer = document.getElementById('studentGrid');
+
+    studentData.forEach((student, index) => {
+      const card = document.createElement('div');
+      card.className = 'student-card';
+      
+      // 計算 Range
+      const classRange = getRankRange(student.classRank);
+      const gradeRange = getRankRange(student.gradeRank);
+
+      card.innerHTML = `
+        <div class="student-name">${student.name}</div>
+        <div class="rank-info" id="rank-${index}">
+          <div class="rank-item"><b>班名次：</b>${classRange}</div>
+          <div class="rank-item"><b>級名次：</b>${gradeRange}</div>
+        </div>
+      `;
+
+      // 4. 點擊切換顯示/遮擋名次
+      card.addEventListener('click', () => {
+        const rankInfo = document.getElementById(`rank-${index}`);
+        const isVisible = rankInfo.style.display === 'block';
+
+        if (isVisible) {
+          rankInfo.style.display = 'none';
+          card.classList.remove('active');
+        } else {
+          rankInfo.style.display = 'block';
+          card.classList.add('active');
+        }
+      });
+
+      gridContainer.appendChild(card);
+    });
+  </script>
+
+</body>
+</html>
